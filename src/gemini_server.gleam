@@ -29,14 +29,22 @@ fn parse_scheme(request_string: String) -> ParseResult {
 fn parse_host(host_and_path: String) -> ParseResult {
   case string.split(host_and_path, "/") {
     [host, path] -> ParseSuccess(host, path)
-    [host] -> ParseSuccess(host, "/")
+    [host] -> ParseSuccess(host, "/\r\n")
+  }
+}
+
+fn parse_path(path_and_control_chars: String) -> ParseResult {
+  case string.ends_with(path_and_control_chars, "\r\n") {
+    True -> ParseSuccess(string.drop_right(path_and_control_chars, 1), "")
+    False -> ParseSuccess(path_and_control_chars, "")
   }
 }
 
 fn parse_request(request_bitstring: BitString) -> Result(String, String) {
   let assert Ok(request_string) = bit_string.to_string(request_bitstring)
   let assert ParseSuccess(_scheme, remainder) = parse_scheme(request_string)
-  let assert ParseSuccess(host, path) = parse_host(remainder)
+  let assert ParseSuccess(_host, remainder) = parse_host(remainder)
+  let assert ParseSuccess(path, _remainder) = parse_path(remainder)
 
   Ok(case path {
     "" -> "index"
