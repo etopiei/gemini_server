@@ -2,6 +2,7 @@ import gleam/io
 import gleam/bit_builder
 import gleam/bit_string
 import gleam/erlang/process
+import gleam/erlang/file
 import gleam/otp/actor
 import gleam/result
 import gleam/string
@@ -15,8 +16,25 @@ type ParseResult {
   ParseFailure(error: String)
 }
 
-fn build_response(_path: String) -> Result(String, String) {
-  Ok("20 text/gemini\r\n# Hello Gemini")
+type GeminiResponse {
+  GeminiContent(data: String)
+  ServerError
+  NotFound
+}
+
+fn read_file_to_response(path) {
+  case file.read(path) {
+    Ok(data) -> GeminiContent(data)
+    _ -> ServerError
+  }
+}
+
+fn build_response(path: String) -> GeminiResponse {
+  let full_path = "pages/" <> path <> ".gemini"
+  case file.is_file(full_path)  {
+    True -> read_file_to_response(full_path)
+    False -> NotFound
+  }
 }
 
 fn parse_scheme(request_string: String) -> ParseResult {
@@ -55,12 +73,26 @@ fn parse_request(request_bitstring: BitString) -> Result(String, String) {
 
 fn handle_gemini_request(request_string) {
   let assert Ok(path) = parse_request(request_string)
+  let assert response = build_response(path)
+
+  let code = case response {
+    GeminiContent(_) -> "20"
+    ServerError -> "40"
+    NotFound -> "51"
+  }
+
+  let full_response = case response {
+    GeminiContent(data) -> code <> " text/gemini\r\n" <> data
+    ServerError -> code
+    NotFound -> code <> " " <> path <> " not found."
+  }
 
   io.print("Request for path: ")
-  io.println(path)
+  io.print(path)
+  io.print(" => Code: ")
+  io.println(code)
 
-  let assert Ok(build_response) = build_response(path)
-  bit_builder.from_string(build_response)
+  bit_builder.from_string(full_response)
 }
 
 pub fn main() {

@@ -4,19 +4,27 @@ A simple gemini server written to learn some Gleam.
 
 ## Getting started (local dev)
 
-1. Setup self-signed ssl certs
+1. Clone repo
+
+```
+git clone git@github.com:etopiei/gemini_server.git
+```
+
+2. Setup self-signed ssl certs
 
 ```bash
 openssl req -x509 -nodes -newkey rsa:4096 -keyout server.key -out server.crt -sha256 -days 365
 ```
 
-2. Run server
+3. Add `.gemini` text files to 'pages' directory.
+
+4. Run server
 
 ```
 gleam run
 ```
 
-3. Test server with little python script
+5. Test server with little python script
 
 Currently this script just connects with TLS and then
 requests `gemini://localhost/` and prints the result.
