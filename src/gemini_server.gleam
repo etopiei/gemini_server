@@ -31,7 +31,7 @@ fn read_file_to_response(path) {
 
 fn build_response(path: String) -> GeminiResponse {
   let full_path = "pages/" <> path <> ".gemini"
-  case file.is_file(full_path)  {
+  case file.is_file(full_path) {
     True -> read_file_to_response(full_path)
     False -> NotFound
   }
