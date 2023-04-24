@@ -1,0 +1,4 @@
+ - [ ] Write data types to write out a gemini response
+ - [ ] Implement a 'to_string' from response object
+ - [ ] Implement a method to read directory and get all gemini text files
+ - [ ] Read 'path' from requests from clients and server appropriate file, or 'not found' response
