@@ -1,23 +1,56 @@
 import gleam/io
 import gleam/bit_builder
+import gleam/bit_string
 import gleam/erlang/process
 import gleam/otp/actor
 import gleam/result
+import gleam/string
 import glisten/acceptor
 import glisten/handler
 import glisten/ssl
 import glisten
 
+type ParseResult {
+  ParseSuccess(result: String, remainder: String)
+  ParseFailure(error: String)
+}
+
 fn build_response(_path: String) -> Result(String, String) {
   Ok("20 text/gemini\r\n# Hello Gemini")
 }
 
-fn parse_request(_request_string: BitString) -> Result(String, String) {
-  Ok("/")
+fn parse_scheme(request_string: String) -> ParseResult {
+  case string.split(request_string, "://") {
+    [scheme, host_and_path] -> ParseSuccess(scheme, host_and_path)
+    _ -> ParseFailure("URL Missing scheme")
+  }
+}
+
+fn parse_host(host_and_path: String) -> ParseResult {
+  case string.split(host_and_path, "/") {
+    [host, path] -> ParseSuccess(host, path)
+    [host] -> ParseSuccess(host, "/")
+  }
+}
+
+fn parse_request(request_bitstring: BitString) -> Result(String, String) {
+  let assert Ok(request_string) = bit_string.to_string(request_bitstring)
+  let assert ParseSuccess(_scheme, remainder) = parse_scheme(request_string)
+  let assert ParseSuccess(host, path) = parse_host(remainder)
+
+  Ok(case path {
+    "" -> "index"
+    "/" -> "index"
+    _ -> path
+  })
 }
 
 fn handle_gemini_request(request_string) {
   let assert Ok(path) = parse_request(request_string)
+
+  io.print("Request for path: ")
+  io.println(path)
+
   let assert Ok(build_response) = build_response(path)
   bit_builder.from_string(build_response)
 }
