@@ -3,6 +3,7 @@ import gleam/bit_builder
 import gleam/bit_string
 import gleam/erlang/process
 import gleam/erlang/file
+import gleam/list
 import gleam/otp/actor
 import gleam/result
 import gleam/string
@@ -29,9 +30,10 @@ fn read_file_to_response(path) {
   }
 }
 
-fn build_response(path: String) -> GeminiResponse {
+fn build_response(path: String, available_pages: List(String)) -> GeminiResponse {
   let full_path = "pages/" <> path <> ".gemini"
-  case file.is_file(full_path) {
+
+  case list.contains(available_pages, path <> ".gemini") {
     True -> read_file_to_response(full_path)
     False -> NotFound
   }
@@ -71,9 +73,9 @@ fn parse_request(request_bitstring: BitString) -> Result(String, String) {
   })
 }
 
-fn handle_gemini_request(request_string) {
+fn handle_gemini_request(request_string, available_pages) {
   let assert Ok(path) = parse_request(request_string)
-  let assert response = build_response(path)
+  let response = build_response(path, available_pages)
 
   let code = case response {
     GeminiContent(_) -> "20"
@@ -95,10 +97,34 @@ fn handle_gemini_request(request_string) {
   bit_builder.from_string(full_response)
 }
 
+fn add_if_gemini(file) {
+  case string.ends_with(file, ".gemini") {
+    True -> [file]
+    False -> []
+  }
+}
+
+fn add_if_file(dir, file) {
+  case file.is_file(dir <> "/" <> file) {
+    True -> add_if_gemini(file) 
+    False -> []
+  }
+}
+
+fn find_gemini_files(dir) {
+  let assert Ok(file_list) = file.list_directory(dir)
+  list.flat_map(file_list, fn (file) { add_if_file(dir, file) })
+}
+
 pub fn main() {
   io.println("Starting gemini_server!")
-  handler.func(fn(msg, state) {
-    let assert Ok(_) = ssl.send(state.socket, handle_gemini_request(msg))
+
+  let available_pages = find_gemini_files("pages")
+  io.print("Found pages: ")
+  io.debug(available_pages)
+
+  handler.func(fn(req, state) {
+    let assert Ok(_) = ssl.send(state.socket, handle_gemini_request(req, available_pages))
     let _ = ssl.close(state.socket)
     actor.Stop(process.Normal)
   })

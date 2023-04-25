@@ -1,1 +1,2 @@
 # Welcome to 'gemini_server' written with love in Gleam <3
+=> gemini://localhost/test
