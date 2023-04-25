@@ -106,14 +106,14 @@ fn add_if_gemini(file) {
 
 fn add_if_file(dir, file) {
   case file.is_file(dir <> "/" <> file) {
-    True -> add_if_gemini(file) 
+    True -> add_if_gemini(file)
     False -> []
   }
 }
 
 fn find_gemini_files(dir) {
   let assert Ok(file_list) = file.list_directory(dir)
-  list.flat_map(file_list, fn (file) { add_if_file(dir, file) })
+  list.flat_map(file_list, fn(file) { add_if_file(dir, file) })
 }
 
 pub fn main() {
@@ -124,7 +124,8 @@ pub fn main() {
   io.debug(available_pages)
 
   handler.func(fn(req, state) {
-    let assert Ok(_) = ssl.send(state.socket, handle_gemini_request(req, available_pages))
+    let assert Ok(_) =
+      ssl.send(state.socket, handle_gemini_request(req, available_pages))
     let _ = ssl.close(state.socket)
     actor.Stop(process.Normal)
   })
