@@ -31,9 +31,9 @@ fn read_file_to_response(path) {
 }
 
 fn build_response(path: String, available_pages: List(String)) -> GeminiResponse {
-  let full_path = "pages/" <> path <> ".gemini"
+  let full_path = "pages/" <> path <> ".gmi"
 
-  case list.contains(available_pages, path <> ".gemini") {
+  case list.contains(available_pages, path <> ".gmi") {
     True -> read_file_to_response(full_path)
     False -> NotFound
   }
@@ -98,7 +98,7 @@ fn handle_gemini_request(request_string, available_pages) {
 }
 
 fn add_if_gemini(file) {
-  case string.ends_with(file, ".gemini") {
+  case string.ends_with(file, ".gmi") {
     True -> [file]
     False -> []
   }
